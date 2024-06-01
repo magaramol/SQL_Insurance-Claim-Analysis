@@ -14,6 +14,24 @@ This project involves analyzing insurance claim data to answer various questions
 1. **Top 5 Patients with Highest Insurance Claims**
    - Identify the top 5 patients who have claimed the highest insurance amounts.
 
+```sql
+
+
+-- using order by
+
+
+select * from insurance_data order by claim  desc limit 5
+
+
+-- using window function
+
+
+select *,rank() over(order by claim desc) from insurance_data limit 5;
+
+
+```
+
+
 2. **Average Insurance Claimed by Number of Children**
    - Determine the average insurance amount claimed by patients based on the number of children they have.
 
