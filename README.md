@@ -44,16 +44,20 @@ from insurance_data) t
 where t.rnk=1
 
 
-
-
-
-
 ```
 
 
 3. **Highest and Lowest Claimed Amount by Region**
    - Find the highest and lowest claimed amounts by patients in each region.
+```sql
 
+select region,mx as max_claim,mn as min_claim, rn from (select *,
+max(claim) over (partition by region) as mx,
+min(claim) over (partition by region) as mn,
+row_number() over (partition by region) as rn
+ from insurance_data) t
+ where t.rn=1
+```
 4. **Percentage of Smokers by Age Group**
    - Calculate the percentage of smokers in each age group.
 
