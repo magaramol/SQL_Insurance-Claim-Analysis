@@ -35,6 +35,22 @@ select *,rank() over(order by claim desc) from insurance_data limit 5;
 2. **Average Insurance Claimed by Number of Children**
    - Determine the average insurance amount claimed by patients based on the number of children they have.
 
+```sql
+
+
+select * from (select * ,avg(claim) over(partition by children ),
+row_number() over(partition by children) as rnk
+from insurance_data) t
+where t.rnk=1
+
+
+
+
+
+
+```
+
+
 3. **Highest and Lowest Claimed Amount by Region**
    - Find the highest and lowest claimed amounts by patients in each region.
 
