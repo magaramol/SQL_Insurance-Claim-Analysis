@@ -15,54 +15,52 @@ This project involves analyzing insurance claim data to answer various questions
    - Identify the top 5 patients who have claimed the highest insurance amounts.
 
 ```sql
+-- Using ORDER BY
+SELECT * 
+FROM insurance_data 
+ORDER BY claim DESC 
+LIMIT 5;
 
-
--- using order by
-
-
-select * from insurance_data order by claim  desc limit 5
-
-
--- using window function
-
-
-select *,rank() over(order by claim desc) from insurance_data limit 5;
-
-
+-- Using Window Function
+SELECT *, RANK() OVER (ORDER BY claim DESC) 
+FROM insurance_data 
+LIMIT 5;
 ```
-
 
 2. **Average Insurance Claimed by Number of Children**
    - Determine the average insurance amount claimed by patients based on the number of children they have.
 
 ```sql
-
-
-select * from (select * ,avg(claim) over(partition by children ),
-row_number() over(partition by children) as rnk
-from insurance_data) t
-where t.rnk=1
-
-
+SELECT * 
+FROM (
+    SELECT *, AVG(claim) OVER (PARTITION BY children) AS avg_claim,
+           ROW_NUMBER() OVER (PARTITION BY children) AS rnk
+    FROM insurance_data
+) t
+WHERE t.rnk = 1;
 ```
-
 
 3. **Highest and Lowest Claimed Amount by Region**
    - Find the highest and lowest claimed amounts by patients in each region.
-```sql
 
-select region,mx as max_claim,mn as min_claim, rn from (select *,
-max(claim) over (partition by region) as mx,
-min(claim) over (partition by region) as mn,
-row_number() over (partition by region) as rn
- from insurance_data) t
- where t.rn=1
+```sql
+SELECT region, mx AS max_claim, mn AS min_claim, rn 
+FROM (
+    SELECT *, 
+           MAX(claim) OVER (PARTITION BY region) AS mx,
+           MIN(claim) OVER (PARTITION BY region) AS mn,
+           ROW_NUMBER() OVER (PARTITION BY region) AS rn
+    FROM insurance_data
+) t
+WHERE t.rn = 1;
 ```
+
 4. **Percentage of Smokers by Age Group**
    - Calculate the percentage of smokers in each age group.
 
 ```sql
-SELECT age, (cnt / cnt_1) * 100 FROM (
+SELECT age, (cnt / cnt_1) * 100 AS smoker_percentage 
+FROM (
     SELECT age,
            SUM(CASE WHEN smoker = 'Yes' THEN 1 ELSE 0 END) AS cnt,
            SUM(CASE WHEN smoker = 'No' THEN 1 ELSE 0 END) AS cnt_1,
@@ -84,44 +82,73 @@ FROM insurance_data;
    - For each patient, calculate the difference between their claimed amount and the average claimed amount of patients with the same number of children.
 
 ```sql
-select *,claim- avg(claim) over (partition by children) as diff
-from insurance_data;
+SELECT *, claim - AVG(claim) OVER (PARTITION BY children) AS diff
+FROM insurance_data;
 ```
 
 7. **Patient with Highest BMI in Each Region**
    - Identify the patient with the highest BMI in each region and their respective rank.
+
 ```sql
-select * from (select *,rank() over(partition by region order by bmi desc) as gr_rank
-,rank() over(order by bmi desc) as overall_rank
-from insurance_data) t
-where t.gr_rank=1
+SELECT * 
+FROM (
+    SELECT *, 
+           RANK() OVER (PARTITION BY region ORDER BY bmi DESC) AS gr_rank,
+           RANK() OVER (ORDER BY bmi DESC) AS overall_rank
+    FROM insurance_data
+) t
+WHERE t.gr_rank = 1;
 ```
+
 8. **Difference Between Claimed Amount and Highest BMI Claimed Amount**
    - Calculate the difference between the claimed amount of each patient and the claimed amount of the patient with the highest BMI in their region.
-   
+
 ```sql
-   select *,first_value(claim) over(partition by region order by bmi desc) -claim as dif
- from insurance_data
- ```
+SELECT *, 
+       FIRST_VALUE(claim) OVER (PARTITION BY region ORDER BY bmi DESC) - claim AS diff
+FROM insurance_data;
+```
 
 9. **Difference in Claim Amount by BMI and Smoker Status**
    - For each patient, calculate the difference in claim amount between the patient and the patient with the highest claim amount among patients with the same BMI and smoker status, within the same region. Return the result in descending order of difference.
+
 ```sql
-select *,
-max(claim) over (partition by region,smoker)-claim as claim_diff
- from insurance_data
- order by claim_diff desc
- ```
+SELECT *, 
+       MAX(claim) OVER (PARTITION BY region, smoker) - claim AS claim_diff
+FROM insurance_data
+ORDER BY claim_diff DESC;
+```
 
 10. **Maximum BMI Value Among Next Three Records**
     - For each patient, find the maximum BMI value among their next three records (ordered by age).
+
 ```sql
-select *,
-max(bmi) over(order by age rows between 1 following and 3 following)
- from insurance_data
+SELECT *,
+       MAX(bmi) OVER (ORDER BY age ROWS BETWEEN 1 FOLLOWING AND 3 FOLLOWING)
+FROM insurance_data;
 ```
+
 11. **Rolling Average of Last 2 Claims**
     - For each patient, calculate the rolling average of their last 2 claims.
 
+```sql
+SELECT *,
+       AVG(claim) OVER (ROWS BETWEEN 2 PRECEDING AND 1 PRECEDING)
+FROM insurance_data;
+```
+
 12. **First Claimed Insurance Value for Non-Diabetic Patients**
     - Find the first claimed insurance value for male and female patients within each region, ordered by patient age in ascending order. Only include patients who are non-diabetic and have a BMI value between 25 and 30.
+
+```sql
+SELECT * 
+FROM (
+    SELECT *,
+           FIRST_VALUE(claim) OVER (PARTITION BY region, gender ORDER BY age) AS first_claim,
+           ROW_NUMBER() OVER (PARTITION BY region, gender ORDER BY age) AS rnk
+    FROM insurance_data
+) t
+WHERE t.rnk = 1
+  AND t.diabetic = 'No'
+  AND t.bmi BETWEEN 25 AND 30;
+```
